@@ -15,6 +15,8 @@ const Ventilation = () => import('@/views/ventilation/index.vue')
 const Building = () => import('@/views/building/index.vue')
 const Utility = () => import('@/views/utility/index.vue')
 const Progress = () => import('@/views/progress/index.vue')
+const Measure = () => import('@/views/measure/index.vue')
+const Ledger = () => import('@/views/ledger/index.vue')
 const Testing = () => import('@/views/testing/index.vue')
 const Drill = () => import('@/views/drill/index.vue')
 const Crew = () => import('@/views/crew/index.vue')
@@ -38,6 +40,8 @@ const router = createRouter({
     { path: '/building', name: 'building', component: Building },
     { path: '/utility', name: 'utility', component: Utility },
     { path: '/progress', name: 'progress', component: Progress },
+    { path: '/measure', name: 'measure', component: Measure },
+    { path: '/ledger', name: 'ledger', component: Ledger },
     { path: '/testing', name: 'testing', component: Testing },
     { path: '/drill', name: 'drill', component: Drill },
     { path: '/crew', name: 'crew', component: Crew },
