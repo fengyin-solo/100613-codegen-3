@@ -67,6 +67,40 @@
       <span>共 {{ total }} 条进度节点记录</span>
       <span v-if="errorMessage" class="error-text">{{ errorMessage }}</span>
     </footer>
+
+    <section class="todo-panel">
+      <h3 class="todo-title">计量支付待办清单</h3>
+      <div class="stat-row">
+        <article class="stat-card">
+          <span class="stat-label">待签认确认单</span>
+          <strong class="stat-value">{{ measureTodo.pendingSignCount }}</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">待支付支付单</span>
+          <strong class="stat-value">{{ measureTodo.pendingPayCount }}</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">本期金额合计</span>
+          <strong class="stat-value">{{ measureTodo.currentPeriodAmount }}</strong>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">已支付归档合计</span>
+          <strong class="stat-value">{{ measureTodo.paidArchiveAmount }}</strong>
+        </article>
+      </div>
+      <ul class="todo-list">
+        <li v-for="sheet in measureTodo.pendingSignSheets" :key="`q-${sheet.id}`">
+          待监理签认：确认单 {{ sheet['确认单号'] }}（环 {{ sheet['起始环号'] }}–{{ sheet['结束环号'] }}，报量 {{ sheet['报量工程量'] }}）
+        </li>
+        <li v-for="order in measureTodo.pendingPayOrders" :key="`p-${order.id}`">
+          待支付：支付单 {{ order['支付单号'] }}（{{ order['环次区间'] }}，本期金额 {{ order['本期金额'] }}，口径 {{ order['口径版本'] }}）
+        </li>
+        <li v-if="!measureTodo.pendingSignSheets.length && !measureTodo.pendingPayOrders.length" class="empty-state">
+          计量支付没有待办事项
+        </li>
+      </ul>
+      <p class="todo-note">本期金额与结算台账读同一份数据（现行口径 {{ measureTodo.policyVersion }}），两处不会出现两个数。</p>
+    </section>
   </section>
 </template>
 
@@ -79,6 +113,7 @@ import {
   moduleMeta,
   runAction as applyAction,
 } from '@/api/local-service'
+import { listPaymentOrders, listQuantitySheets, measureSummary } from '@/api/measure-service'
 import type { EntryRow } from '@/data/types'
 
 const meta = moduleMeta('progress')
@@ -98,6 +133,21 @@ const statusSummary = computed(() =>
     count: rows.value.filter((row) => String(row.status) === status).length,
   })),
 )
+
+// 计量待办与结算台账同源：都取 measureSummary / 支付单、确认单原表，不另存副本。
+const measureTodo = ref({
+  ...measureSummary(),
+  pendingSignSheets: [] as EntryRow[],
+  pendingPayOrders: [] as EntryRow[],
+})
+
+function reloadMeasureTodo() {
+  measureTodo.value = {
+    ...measureSummary(),
+    pendingSignSheets: listQuantitySheets().filter((row) => row.status === '待签认'),
+    pendingPayOrders: listPaymentOrders().filter((row) => row.status === '待支付'),
+  }
+}
 
 function resetFilters() {
   filters.value = {}
@@ -128,6 +178,7 @@ function reload() {
     const payload = listEntries(meta.key, filters.value)
     rows.value = payload.items
     total.value = payload.total
+    reloadMeasureTodo()
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : '进度节点列表读取失败'
   }
